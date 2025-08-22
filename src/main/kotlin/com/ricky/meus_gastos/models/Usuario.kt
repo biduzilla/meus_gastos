@@ -3,6 +3,8 @@ package com.ricky.meus_gastos.models
 import jakarta.persistence.*
 import org.hibernate.annotations.SQLDelete
 import org.hibernate.annotations.SQLRestriction
+import org.springframework.security.core.GrantedAuthority
+import org.springframework.security.core.userdetails.UserDetails
 
 @Entity(name = "USUARIO")
 @SQLRestriction("flagExcluido <> true")
@@ -17,4 +19,15 @@ data class Usuario(
 
     @Column(name = "SENHA")
     var senha: String = "",
-) : BaseModel()
+
+    @Column(name = "EMAIL", length = 50)
+    var email: String = "",
+) : BaseModel(), UserDetails {
+    override fun getAuthorities(): MutableCollection<out GrantedAuthority> {
+        return mutableListOf()
+    }
+
+    override fun getPassword(): String = senha
+
+    override fun getUsername(): String = email
+}

@@ -1,6 +1,7 @@
 package com.ricky.meus_gastos.exceptions
 
 import com.ricky.meus_gastos.dto.ErrorView
+import com.ricky.meus_gastos.utils.I18n
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -10,7 +11,7 @@ import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
 @RestControllerAdvice
-class ExceptionHandler {
+class ExceptionHandler(private val i18n: I18n) {
     @ExceptionHandler(GenericException::class)
     fun handleGenericException(
         exception: GenericException,
@@ -20,7 +21,7 @@ class ExceptionHandler {
             ErrorView(
                 status = exception.httpStatus.value(),
                 error = exception.httpStatus.name,
-                message = exception.message,
+                message = i18n.getMessage(exception.message ?: ""),
                 path = request.servletPath
             )
         )
