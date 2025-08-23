@@ -13,15 +13,15 @@ data class Usuario(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "USER_ID")
-    var idUsuario: String = "",
+    var idUsuario: String?,
     @Column(name = "NOME", length = 50)
-    var nome: String = "",
+    var nome: String,
 
     @Column(name = "SENHA")
-    var senha: String = "",
+    var senha: String,
 
     @Column(name = "EMAIL", length = 50)
-    var email: String = "",
+    var email: String,
 ) : BaseModel(), UserDetails {
     override fun getAuthorities(): MutableCollection<out GrantedAuthority> {
         return mutableListOf()
