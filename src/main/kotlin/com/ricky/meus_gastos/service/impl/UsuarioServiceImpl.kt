@@ -13,6 +13,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.AuthenticationException
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class UsuarioServiceImpl(
@@ -48,12 +49,14 @@ class UsuarioServiceImpl(
         }
     }
 
+    @Transactional
     override suspend fun update(usuario: Usuario): Usuario {
         usuario.idUsuario?.let { idUsuario ->
             var user = findById(idUsuario)
             user = user.copy(
                 nome = usuario.nome,
-                email = usuario.email
+                email = usuario.email,
+                senha = passwordEncoder.encode(usuario.senha)
             )
             return save(user)
         } ?: throw GenericException(
@@ -62,7 +65,9 @@ class UsuarioServiceImpl(
         )
     }
 
+    @Transactional
     override suspend fun save(usuario: Usuario): Usuario {
+        usuario.senha = passwordEncoder.encode(usuario.senha)
         return usuarioRepository.save(usuario)
     }
 
@@ -71,8 +76,7 @@ class UsuarioServiceImpl(
     }
 
     override suspend fun findById(idUsuario: String): Usuario {
-        return usuarioRepository.findById(idUsuario) ?:
-        throw GenericException(
+        return usuarioRepository.findById(idUsuario) ?: throw GenericException(
             msg = "usuario.nao.encotrado",
             httpStatus = HttpStatus.NOT_FOUND
         )

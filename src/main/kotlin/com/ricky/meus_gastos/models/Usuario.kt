@@ -1,5 +1,6 @@
 package com.ricky.meus_gastos.models
 
+import com.ricky.meus_gastos.dto.UsuarioDTO
 import jakarta.persistence.*
 import org.hibernate.annotations.SQLDelete
 import org.hibernate.annotations.SQLRestriction
@@ -30,4 +31,13 @@ data class Usuario(
     override fun getPassword(): String = senha
 
     override fun getUsername(): String = email
+}
+
+fun Usuario.toDTO(): UsuarioDTO {
+    return UsuarioDTO(
+        idUsuario = idUsuario,
+        nome = nome,
+        senha = senha,
+        email = email
+    )
 }
