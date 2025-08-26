@@ -1,7 +1,6 @@
 package com.ricky.meus_gastos.config
 
 import com.ricky.meus_gastos.service.UsuarioService
-import kotlinx.coroutines.runBlocking
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy

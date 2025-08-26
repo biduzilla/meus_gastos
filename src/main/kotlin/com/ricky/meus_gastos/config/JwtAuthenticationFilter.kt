@@ -52,42 +52,4 @@ class JwtAuthenticationFilter(
         }
         filterChain.doFilter(request, response)
     }
-
-//    override fun doFilterInternal(
-//        request: HttpServletRequest,
-//        response: HttpServletResponse,
-//        filterChain: FilterChain
-//    ) {
-//        val authHeader: String? = request.getHeader("Authorization")
-//
-//        if (authHeader.isNullOrBlank() || !authHeader.startsWith("Bearer ")) {
-//            filterChain.doFilter(request, response)
-//            return
-//        }
-//
-//        try {
-//            val jwt = authHeader.substring(7)
-//            val userEmail = jwtService.extractUsername(jwt)
-//            val auth = SecurityContextHolder.getContext().authentication
-//
-//            if (!userEmail.isNullOrBlank() && auth == null) {
-//                val userDetails = userDetailsService.loadUserByUsername(userEmail)
-//
-//                if (jwtService.isTokenValid(jwt, userDetails)) {
-//                    val authToken = UsernamePasswordAuthenticationToken(
-//                        userDetails,
-//                        null,
-//                        userDetails.authorities
-//                    )
-//                    authToken.details = WebAuthenticationDetailsSource().buildDetails(request)
-//                    SecurityContextHolder.getContext().authentication = authToken
-//                }
-//            }
-//
-//            filterChain.doFilter(request, response)
-//        } catch (e: Exception) {
-//            handlerExceptionResolver.resolveException(request, response, null, e)
-//        }
-//
-//    }
 }

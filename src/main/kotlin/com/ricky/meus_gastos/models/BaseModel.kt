@@ -14,22 +14,22 @@ import java.time.LocalDateTime
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener::class)
 abstract class BaseModel(
-    @Column(updatable = false, name = "CREATEDAT")
+    @Column(updatable = false, name = "CREATED_AT")
     @field:CreatedDate
     var createdAt: LocalDateTime? = null,
 
     @field:CreatedBy
-    @Column(updatable = false, name = "CREATEDBY")
+    @Column(updatable = false, name = "CREATED_BY")
     var createdBy: String? = null,
 
     @field:LastModifiedDate
-    @Column(insertable = false, name = "UPDATEDAT")
+    @Column(insertable = false, name = "UPDATED_AT")
     var updatedAt: LocalDateTime? = null,
 
     @field:LastModifiedBy
-    @Column(insertable = false, name = "UPDATEDBY")
+    @Column(insertable = false, name = "UPDATED_BY")
     var updatedBy: String? = null,
 
-    @Column(name = "FLAGEXCLUIDO")
-    var flagExcluido: Boolean = false,
+    @Column(name = "DELETED")
+    var deleted: Boolean = false,
 ) : Serializable

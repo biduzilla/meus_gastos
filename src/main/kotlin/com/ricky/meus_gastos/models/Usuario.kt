@@ -10,12 +10,12 @@ import org.springframework.security.core.userdetails.UserDetails
 
 @Entity
 @Table(name = "USUARIO")
-@SQLRestriction("flagExcluido <> true")
-@SQLDelete(sql = "UPDATE Usuario SET flagExcluido = true WHERE USER_ID=?")
+@SQLRestriction("deleted <> true")
+@SQLDelete(sql = "UPDATE Usuario SET deleted = true WHERE USUARIO_ID=?")
 data class Usuario(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "USER_ID")
+    @Column(name = "USUARIO_ID")
     var idUsuario: String = "",
     @Column(name = "NOME", length = 50)
     var nome: String = "",
