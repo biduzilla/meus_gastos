@@ -11,4 +11,5 @@ interface JwtService {
     fun getExpirationTime(): Long
 
     fun isTokenValid(token:String, userDetails: UserDetails):Boolean
+    fun isTokenValid(token:String):Boolean
 }

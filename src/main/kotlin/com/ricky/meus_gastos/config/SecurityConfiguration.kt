@@ -21,8 +21,15 @@ class SecurityConfiguration(
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http.run {
             csrf { it.disable() }
+            headers {
+                it.frameOptions { frameOptions -> frameOptions.disable() } // ← IMPORTANTE!
+            }
             authorizeHttpRequests {
-                it.requestMatchers("/auth/**").permitAll()
+                it.requestMatchers("/usuario/save").permitAll()
+                it.requestMatchers("/usuario/login").permitAll()
+                it.requestMatchers("/h2-console/**").permitAll()
+                it.requestMatchers("/h2-console/").permitAll()
+                it.requestMatchers("/h2-console").permitAll()
                     .anyRequest().authenticated()
             }
             sessionManagement {

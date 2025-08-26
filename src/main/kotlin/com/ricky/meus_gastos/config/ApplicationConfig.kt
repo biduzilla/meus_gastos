@@ -20,9 +20,7 @@ class ApplicationConfig(
     @Bean
     fun userDetailsService(): UserDetailsService {
         return UserDetailsService { username ->
-            runBlocking {
-                usuarioService.findByEmail(username)
-            }
+            usuarioService.findByEmail(username)
         }
     }
 

@@ -52,6 +52,10 @@ class JwtServiceImpl : JwtService {
         return (userName == userDetails.username) && !isTokenExpired(token)
     }
 
+    override fun isTokenValid(token: String): Boolean {
+        return !isTokenExpired(token)
+    }
+
     private fun isTokenExpired(token: String): Boolean {
         return extractExpiration(token).before(Date())
     }
@@ -65,7 +69,7 @@ class JwtServiceImpl : JwtService {
             .parserBuilder()
             .setSigningKey(getSignInKey())
             .build()
-            .parseClaimsJwt(token)
+            .parseClaimsJws(token)
             .body
     }
 

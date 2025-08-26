@@ -22,11 +22,11 @@ class UsuarioServiceImpl(
     private val authenticationManager: AuthenticationManager,
     private val jwtService: JwtService
 ) : UsuarioService {
-    override suspend fun findByEmail(email: String): Usuario {
+    override fun findByEmail(email: String): Usuario {
         return usuarioRepository.findByEmail(email) ?: throw GenericException("email.nao.encontrado")
     }
 
-    override suspend fun login(login: LoginDTO): TokenDTO {
+    override fun login(login: LoginDTO): TokenDTO {
         try {
             authenticationManager.authenticate(
                 UsernamePasswordAuthenticationToken(
@@ -39,44 +39,52 @@ class UsuarioServiceImpl(
             val token = jwtService.generateToken(usuario)
             return TokenDTO(
                 token = token,
-                idUser = usuario.idUsuario ?: "",
+                idUser = usuario.idUsuario,
                 nome = usuario.nome
             )
         } catch (e: AuthenticationException) {
             throw GenericException(
                 msg = "error.login.invalido",
-                httpStatus = HttpStatus.FORBIDDEN
+                httpStatus = HttpStatus.BAD_REQUEST
             )
         }
     }
 
     @Transactional
-    override suspend fun update(usuario: Usuario): Usuario {
-        usuario.idUsuario?.let { idUsuario ->
-            var user = findById(idUsuario)
-            user = user.copy(
-                nome = usuario.nome,
-                email = usuario.email,
-                senha = passwordEncoder.encode(usuario.senha)
+    override fun update(usuario: Usuario): Usuario {
+        if (usuarioRepository.existsByEmail(usuario.email)) {
+            throw GenericException(
+                msg = "error.email.cadastrado",
+                httpStatus = HttpStatus.BAD_REQUEST
             )
-            return save(user)
-        } ?: throw GenericException(
-            msg = "usuario.nao.encotrado",
-            httpStatus = HttpStatus.NOT_FOUND
+        }
+        val user = findById(usuario.idUsuario).copy(
+            nome = usuario.nome,
+            email = usuario.email,
+            senha = passwordEncoder.encode(usuario.senha)
         )
+
+        return save(user)
     }
 
+
     @Transactional
-    override suspend fun save(usuario: Usuario): Usuario {
+    override fun save(usuario: Usuario): Usuario {
+        if (usuarioRepository.existsByEmail(usuario.email)) {
+            throw GenericException(
+                msg = "error.email.cadastrado",
+                httpStatus = HttpStatus.BAD_REQUEST
+            )
+        }
         usuario.senha = passwordEncoder.encode(usuario.senha)
         return usuarioRepository.save(usuario)
     }
 
-    override suspend fun deleteById(idUsuario: String) {
+    override fun deleteById(idUsuario: String) {
         usuarioRepository.deleteById(idUsuario)
     }
 
-    override suspend fun findById(idUsuario: String): Usuario {
+    override fun findById(idUsuario: String): Usuario {
         return usuarioRepository.findById(idUsuario).orElseThrow {
             throw GenericException(
                 msg = "usuario.nao.encotrado",
