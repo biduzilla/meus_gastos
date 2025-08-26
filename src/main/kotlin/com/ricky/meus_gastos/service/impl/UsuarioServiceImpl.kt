@@ -22,8 +22,9 @@ class UsuarioServiceImpl(
     private val authenticationManager: AuthenticationManager,
     private val jwtService: JwtService
 ) : UsuarioService {
-    override suspend fun findByEmail(email: String): Usuario =
-        usuarioRepository.findByEmail(email) ?: throw GenericException("email.nao.encotrado")
+    override suspend fun findByEmail(email: String): Usuario {
+        return usuarioRepository.findByEmail(email) ?: throw GenericException("email.nao.encontrado")
+    }
 
     override suspend fun login(login: LoginDTO): TokenDTO {
         try {
@@ -76,9 +77,11 @@ class UsuarioServiceImpl(
     }
 
     override suspend fun findById(idUsuario: String): Usuario {
-        return usuarioRepository.findById(idUsuario) ?: throw GenericException(
-            msg = "usuario.nao.encotrado",
-            httpStatus = HttpStatus.NOT_FOUND
-        )
+        return usuarioRepository.findById(idUsuario).orElseThrow {
+            throw GenericException(
+                msg = "usuario.nao.encotrado",
+                httpStatus = HttpStatus.NOT_FOUND
+            )
+        }
     }
 }

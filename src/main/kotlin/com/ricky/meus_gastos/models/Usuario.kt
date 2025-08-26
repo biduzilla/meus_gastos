@@ -7,7 +7,8 @@ import org.hibernate.annotations.SQLRestriction
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 
-@Entity(name = "USUARIO")
+@Entity
+@Table(name = "USUARIO")
 @SQLRestriction("flagExcluido <> true")
 @SQLDelete(sql = "UPDATE Usuario SET flagExcluido = true WHERE idUsuario=?")
 data class Usuario(
