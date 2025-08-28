@@ -242,15 +242,15 @@ func (m UserModel) GetByEmail(email string) (*User, error) {
 
 func (m UserModel) UpdateCodByEmail(user *User) error {
 	query := `
-	UDATE users SET
+	UPDATE users SET
 	cod = $1
-	WHERE id = $1 AND version = $2
+	WHERE id = $2 AND version = $3
 	RETURNING version`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	err := m.DB.QueryRowContext(ctx, query, user.ID, user.Cod).Scan(
+	err := m.DB.QueryRowContext(ctx, query, user.ID, user.Cod, user.Version).Scan(
 		&user.Version,
 	)
 
