@@ -40,11 +40,11 @@ func (t TypeCategoria) String() string {
 
 type CategoryDTO struct {
 	ID        int64         `json:"category_id"`
-	CreatedAt time.Time     `json:"created_at"`
+	CreatedAt time.Time     `json:"-"`
 	Name      string        `json:"name"`
 	Tipo      TypeCategoria `json:"tipo"`
 	Color     string        `json:"color"`
-	User      *UserDTO      `json:"user"`
+	User      *UserDTO      `json:"-"`
 	Version   int           `json:"version"`
 }
 
