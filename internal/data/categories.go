@@ -39,13 +39,13 @@ func (t TypeCategoria) String() string {
 }
 
 type CategoryDTO struct {
-	ID        int64         `json:"category_id"`
-	CreatedAt time.Time     `json:"-"`
-	Name      string        `json:"name"`
-	Tipo      TypeCategoria `json:"tipo"`
-	Color     string        `json:"color"`
-	User      *UserDTO      `json:"-"`
-	Version   int           `json:"version"`
+	ID        int64          `json:"category_id"`
+	CreatedAt *time.Time     `json:"-"`
+	Name      *string        `json:"name"`
+	Tipo      *TypeCategoria `json:"tipo"`
+	Color     *string        `json:"color"`
+	User      *UserDTO       `json:"-"`
+	Version   *int           `json:"version"`
 }
 
 type CategoryModel struct {
@@ -53,27 +53,110 @@ type CategoryModel struct {
 }
 
 func (c *Category) ToDTO() *CategoryDTO {
+	var createdAt *time.Time
+	if !c.CreatedAt.IsZero() {
+		createdAt = &c.CreatedAt
+	}
+	var name *string
+	if c.Name != "" {
+		name = &c.Name
+	}
+	var tipo *TypeCategoria
+	if c.Type != 0 {
+		tipo = &c.Type
+	}
+	var color *string
+	if c.Color != "" {
+		color = &c.Color
+	}
+	var user *UserDTO
+	if c.User != nil {
+		user = c.User.ToDTO()
+	}
+	var version *int
+	if c.Version != 0 {
+		version = &c.Version
+	}
+
 	return &CategoryDTO{
 		ID:        c.ID,
-		CreatedAt: c.CreatedAt,
-		Name:      c.Name,
-		Tipo:      c.Type,
-		Color:     c.Color,
-		User:      c.User.ToDTO(),
-		Version:   c.Version,
+		CreatedAt: createdAt,
+		Name:      name,
+		Tipo:      tipo,
+		Color:     color,
+		User:      user,
+		Version:   version,
 	}
 }
 
 func (c *CategoryDTO) ToModel() *Category {
+	var createdAt time.Time
+	if c.CreatedAt != nil {
+		createdAt = *c.CreatedAt
+	}
+
+	var name string
+	if c.Name != nil {
+		name = *c.Name
+	}
+
+	var tipo TypeCategoria
+	if c.Tipo != nil {
+		tipo = *c.Tipo
+	}
+
+	var color string
+	if c.Color != nil {
+		color = *c.Color
+	}
+
+	var user *User
+	if c.User != nil {
+		user = c.User.ToModel()
+	}
+
+	var version int
+	if c.Version != nil {
+		version = *c.Version
+	}
+
 	return &Category{
 		ID:        c.ID,
-		CreatedAt: c.CreatedAt,
-		Name:      c.Name,
-		Type:      c.Tipo,
-		Color:     c.Color,
-		User:      c.User.ToModel(),
-		Version:   c.Version,
+		CreatedAt: createdAt,
+		Name:      name,
+		Type:      tipo,
+		Color:     color,
+		User:      user,
+		Version:   version,
 	}
+}
+
+func (c *CategoryDTO) ToDTOUpdateCategory(category *Category) *Category {
+	if c.CreatedAt != nil {
+		category.CreatedAt = *c.CreatedAt
+	}
+
+	if c.Name != nil {
+		category.Name = *c.Name
+	}
+
+	if c.Tipo != nil {
+		category.Type = *c.Tipo
+	}
+
+	if c.Color != nil {
+		category.Color = *c.Color
+	}
+
+	if c.User != nil {
+		category.User = c.User.ToModel()
+	}
+
+	if c.Version != nil {
+		category.Version = *c.Version
+	}
+
+	return category
 }
 
 func (m CategoryModel) Insert(category *Category) error {
@@ -241,7 +324,7 @@ func (m CategoryModel) Update(category *Category, userID int64) error {
 	return nil
 }
 
-func (m CategoryModel) Delete(category *Category, userID int64) error {
+func (m CategoryModel) Delete(id int64, userID int64) error {
 	query := `
 	UPDATE from categories
 	SET
@@ -250,13 +333,12 @@ func (m CategoryModel) Delete(category *Category, userID int64) error {
 		id = $1
 		AND user_id = $2
 		AND deleted = false
-		AND version = $3
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	result, err := m.DB.ExecContext(ctx, query, category.ID, userID, category.Version)
+	result, err := m.DB.ExecContext(ctx, query, id, userID)
 
 	if err != nil {
 		return err

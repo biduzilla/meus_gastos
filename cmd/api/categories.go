@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"meus_gastos/internal/data"
 	"meus_gastos/internal/validator"
 	"net/http"
@@ -26,15 +28,9 @@ func (app *application) listCategoriesHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	userID := app.contextGetUser(r).ID
-	categories, metadata, err := app.models.Categories.GetAll(input.Name, userID, input.Filters)
+	user := app.contextGetUser(r)
+	categories, metadata, err := app.models.Categories.GetAll(input.Name, user.ID, input.Filters)
 
-	if err != nil {
-		app.serverErrorResponse(w, r, err)
-		return
-	}
-
-	user, err := app.models.Users.GetByID(userID)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -45,6 +41,133 @@ func (app *application) listCategoriesHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"categories": categories, "metadata": metadata}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) createCategoryHandler(w http.ResponseWriter, r *http.Request) {
+	var dto data.CategoryDTO
+	err := app.readJSON(w, r, &dto)
+
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	category := dto.ToModel()
+
+	v := validator.New()
+
+	if data.ValidateCategory(v, category); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	err = app.models.Categories.Insert(category)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	headers := make(http.Header)
+	headers.Set("Location", fmt.Sprintf("/v1/categories/%d", category.ID))
+
+	err = app.writeJSON(w, http.StatusCreated, envelope{"category": category}, headers)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) showCategoryHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.readIDParam(r)
+	if err != nil || id < 1 {
+		app.notFoundResponse(w, r)
+		return
+	}
+	user := app.contextGetUser(r)
+	category, err := app.models.Categories.GetByID(id, user.ID)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"category": category.ToDTO()}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) updateCategoryHandler(w http.ResponseWriter, r *http.Request) {
+	var dto data.CategoryDTO
+	err := app.readJSON(w, r, &dto)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	user := app.contextGetUser(r)
+	v := validator.New()
+	if data.ValidateCategory(v, dto.ToModel()); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	category, err := app.models.Categories.GetByID(dto.ID, user.ID)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	category = dto.ToDTOUpdateCategory(category)
+
+	err = app.models.Categories.Update(category, user.ID)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"category": category.ToDTO()}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) deleteCategoryHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.readIDParam(r)
+	if err != nil || id < 1 {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	user := app.contextGetUser(r)
+	err = app.models.Categories.Delete(id, user.ID)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "category successfully deleted"}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}

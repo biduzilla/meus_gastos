@@ -139,6 +139,28 @@ func (app *application) readIDParam(r *http.Request) (int64, error) {
 	return id, nil
 }
 
+func (app *application) readIntParam(r *http.Request, name string) (int64, error) {
+	params := httprouter.ParamsFromContext(r.Context())
+
+	id, err := strconv.ParseInt(params.ByName(name), 10, 64)
+	if err != nil || id < 1 {
+		return 0, errors.New(fmt.Sprintf("invalid %s parameter", name))
+	}
+
+	return id, nil
+}
+
+func (app *application) readStrParam(r *http.Request, name string) (string, error) {
+	params := httprouter.ParamsFromContext(r.Context())
+	value := params.ByName(name)
+
+	if value == "" {
+		return "", errors.New(fmt.Sprintf("invalid %s parameter", name))
+	}
+
+	return value, nil
+}
+
 func (app *application) generateRandomCod() int {
 	return rand.Intn(900000) + 100000
 }
