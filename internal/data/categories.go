@@ -55,7 +55,7 @@ type CategoryDTO struct {
 	Name      *string    `json:"name"`
 	Tipo      *string    `json:"tipo"`
 	Color     *string    `json:"color"`
-	User      *UserDTO   `json:"-"`
+	User      *UserDTO   `json:"user"`
 	Version   *int       `json:"version"`
 }
 

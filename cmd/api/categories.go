@@ -36,11 +36,13 @@ func (app *application) listCategoriesHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	categoriesDTO := []*data.CategoryDTO{}
 	for _, c := range categories {
 		c.User = user
+		categoriesDTO = append(categoriesDTO, c.ToDTO())
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"categories": categories, "metadata": metadata}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"categories": categoriesDTO, "metadata": metadata}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
@@ -74,6 +76,8 @@ func (app *application) createCategoryHandler(w http.ResponseWriter, r *http.Req
 	headers := make(http.Header)
 	headers.Set("Location", fmt.Sprintf("/v1/categories/%d", category.ID))
 
+	category.User = user
+
 	err = app.writeJSON(w, http.StatusCreated, envelope{"category": category.ToDTO()}, headers)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
@@ -97,6 +101,8 @@ func (app *application) showCategoryHandler(w http.ResponseWriter, r *http.Reque
 		}
 		return
 	}
+
+	category.User = user
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"category": category.ToDTO()}, nil)
 	if err != nil {
@@ -148,6 +154,8 @@ func (app *application) updateCategoryHandler(w http.ResponseWriter, r *http.Req
 		}
 		return
 	}
+
+	category.User = user
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"category": category.ToDTO()}, nil)
 	if err != nil {
