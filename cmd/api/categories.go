@@ -55,7 +55,8 @@ func (app *application) createCategoryHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	category := dto.ToModel()
+	user := app.contextGetUser(r)
+	category := dto.ToModel(user)
 
 	v := validator.New()
 
@@ -73,7 +74,7 @@ func (app *application) createCategoryHandler(w http.ResponseWriter, r *http.Req
 	headers := make(http.Header)
 	headers.Set("Location", fmt.Sprintf("/v1/categories/%d", category.ID))
 
-	err = app.writeJSON(w, http.StatusCreated, envelope{"category": category}, headers)
+	err = app.writeJSON(w, http.StatusCreated, envelope{"category": category.ToDTO()}, headers)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
@@ -104,8 +105,14 @@ func (app *application) showCategoryHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (app *application) updateCategoryHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.readIDParam(r)
+	if err != nil || id < 1 {
+		app.notFoundResponse(w, r)
+		return
+	}
+
 	var dto data.CategoryDTO
-	err := app.readJSON(w, r, &dto)
+	err = app.readJSON(w, r, &dto)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
 		return
@@ -113,12 +120,12 @@ func (app *application) updateCategoryHandler(w http.ResponseWriter, r *http.Req
 
 	user := app.contextGetUser(r)
 	v := validator.New()
-	if data.ValidateCategory(v, dto.ToModel()); !v.Valid() {
+	if data.ValidateCategory(v, dto.ToModel(user)); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
 
-	category, err := app.models.Categories.GetByID(dto.ID, user.ID)
+	category, err := app.models.Categories.GetByID(id, user.ID)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):

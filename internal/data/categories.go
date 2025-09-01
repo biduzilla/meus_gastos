@@ -23,29 +23,40 @@ type Category struct {
 type TypeCategoria int
 
 const (
-	Receita TypeCategoria = iota + 1
-	Despesa
+	RECEITA TypeCategoria = iota + 1
+	DESPESA
 )
 
 func (t TypeCategoria) String() string {
 	switch t {
-	case Receita:
-		return "Receita"
-	case Despesa:
-		return "Despesa"
+	case RECEITA:
+		return "RECEITA"
+	case DESPESA:
+		return "DESPESA"
 	default:
 		return "Unknown"
 	}
 }
 
+func TypeCategoriaFromString(s string) TypeCategoria {
+	switch s {
+	case "RECEITA":
+		return RECEITA
+	case "DESPESA":
+		return DESPESA
+	default:
+		return 0
+	}
+}
+
 type CategoryDTO struct {
-	ID        int64          `json:"category_id"`
-	CreatedAt *time.Time     `json:"-"`
-	Name      *string        `json:"name"`
-	Tipo      *TypeCategoria `json:"tipo"`
-	Color     *string        `json:"color"`
-	User      *UserDTO       `json:"-"`
-	Version   *int           `json:"version"`
+	ID        *int64     `json:"category_id"`
+	CreatedAt *time.Time `json:"-"`
+	Name      *string    `json:"name"`
+	Tipo      *string    `json:"tipo"`
+	Color     *string    `json:"color"`
+	User      *UserDTO   `json:"-"`
+	Version   *int       `json:"version"`
 }
 
 type CategoryModel struct {
@@ -53,6 +64,11 @@ type CategoryModel struct {
 }
 
 func (c *Category) ToDTO() *CategoryDTO {
+	var id *int64
+	if c.ID != 0 {
+		id = &c.ID
+	}
+
 	var createdAt *time.Time
 	if !c.CreatedAt.IsZero() {
 		createdAt = &c.CreatedAt
@@ -61,9 +77,10 @@ func (c *Category) ToDTO() *CategoryDTO {
 	if c.Name != "" {
 		name = &c.Name
 	}
-	var tipo *TypeCategoria
+	var tipo *string
 	if c.Type != 0 {
-		tipo = &c.Type
+		tipoStr := c.Type.String()
+		tipo = &tipoStr
 	}
 	var color *string
 	if c.Color != "" {
@@ -79,7 +96,7 @@ func (c *Category) ToDTO() *CategoryDTO {
 	}
 
 	return &CategoryDTO{
-		ID:        c.ID,
+		ID:        id,
 		CreatedAt: createdAt,
 		Name:      name,
 		Tipo:      tipo,
@@ -89,7 +106,12 @@ func (c *Category) ToDTO() *CategoryDTO {
 	}
 }
 
-func (c *CategoryDTO) ToModel() *Category {
+func (c *CategoryDTO) ToModel(user *User) *Category {
+	var id int64
+	if c.ID != nil {
+		id = *c.ID
+	}
+
 	var createdAt time.Time
 	if c.CreatedAt != nil {
 		createdAt = *c.CreatedAt
@@ -102,17 +124,12 @@ func (c *CategoryDTO) ToModel() *Category {
 
 	var tipo TypeCategoria
 	if c.Tipo != nil {
-		tipo = *c.Tipo
+		tipo = TypeCategoriaFromString(*c.Tipo)
 	}
 
 	var color string
 	if c.Color != nil {
 		color = *c.Color
-	}
-
-	var user *User
-	if c.User != nil {
-		user = c.User.ToModel()
 	}
 
 	var version int
@@ -121,7 +138,7 @@ func (c *CategoryDTO) ToModel() *Category {
 	}
 
 	return &Category{
-		ID:        c.ID,
+		ID:        id,
 		CreatedAt: createdAt,
 		Name:      name,
 		Type:      tipo,
@@ -141,7 +158,7 @@ func (c *CategoryDTO) ToDTOUpdateCategory(category *Category) *Category {
 	}
 
 	if c.Tipo != nil {
-		category.Type = *c.Tipo
+		category.Type = TypeCategoriaFromString(*c.Tipo)
 	}
 
 	if c.Color != nil {
@@ -159,7 +176,20 @@ func (c *CategoryDTO) ToDTOUpdateCategory(category *Category) *Category {
 	return category
 }
 
+var (
+	ErrDuplicateName = errors.New("duplicate name")
+)
+
 func (m CategoryModel) Insert(category *Category) error {
+	exists, err := m.ExistsByName(category.Name, category.User.ID)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		return ErrDuplicateName
+	}
+
 	query := `
 	INSERT INTO categories (name, type, color, user_id)
 	VALUES ($1, $2, $3, $4)
@@ -176,7 +206,7 @@ func (m CategoryModel) Insert(category *Category) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	err := m.DB.QueryRowContext(ctx, query, args...).Scan(
+	err = m.DB.QueryRowContext(ctx, query, args...).Scan(
 		&category.ID,
 		&category.CreatedAt,
 		&category.Version,
@@ -356,10 +386,33 @@ func (m CategoryModel) Delete(id int64, userID int64) error {
 	return nil
 }
 
+func (m CategoryModel) ExistsByName(name string, userID int64) (bool, error) {
+	query := `
+    SELECT EXISTS(
+        SELECT 1 
+        FROM categories 
+        WHERE LOWER(name) = LOWER($1)
+        AND user_id = $2 
+        AND deleted = false
+    )`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var exists bool
+	err := m.DB.QueryRowContext(ctx, query, name, userID).Scan(&exists)
+
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
+
 func ValidateCategory(v *validator.Validator, category *Category) {
 	v.Check(category.Name != "", "name", "must be provided")
 	v.Check(len(category.Name) <= 500, "name", "must not be more than 500 bytes long")
 	v.Check(category.Type.String() != "", "type", "must be provided")
-	v.Check(category.Type.String() == "Unknown", "type", "invalid type")
+	v.Check(category.Type.String() != "Unknown", "type", "invalid type")
 	v.Check(category.Color != "", "color", "must be provided")
 }
