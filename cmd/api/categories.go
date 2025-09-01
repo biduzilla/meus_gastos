@@ -58,7 +58,8 @@ func (app *application) createCategoryHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	user := app.contextGetUser(r)
-	category := dto.ToModel(user)
+	dto.User = user.ToDTO()
+	category := dto.ToModel()
 
 	v := validator.New()
 
@@ -126,7 +127,8 @@ func (app *application) updateCategoryHandler(w http.ResponseWriter, r *http.Req
 
 	user := app.contextGetUser(r)
 	v := validator.New()
-	if data.ValidateCategory(v, dto.ToModel(user)); !v.Valid() {
+	dto.User = user.ToDTO()
+	if data.ValidateCategory(v, dto.ToModel()); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}

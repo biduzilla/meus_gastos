@@ -106,7 +106,7 @@ func (c *Category) ToDTO() *CategoryDTO {
 	}
 }
 
-func (c *CategoryDTO) ToModel(user *User) *Category {
+func (c *CategoryDTO) ToModel() *Category {
 	var id int64
 	if c.ID != nil {
 		id = *c.ID
@@ -135,6 +135,11 @@ func (c *CategoryDTO) ToModel(user *User) *Category {
 	var version int
 	if c.Version != nil {
 		version = *c.Version
+	}
+
+	var user *User
+	if c.User != nil {
+		user = c.User.ToModel()
 	}
 
 	return &Category{
