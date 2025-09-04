@@ -35,7 +35,7 @@ type TransactionDTO struct {
 	Type        *string      `json:"type"`
 }
 
-func (t *Transaction) toDTO() *TransactionDTO {
+func (t *Transaction) ToDTO() *TransactionDTO {
 	var typeStr string
 	if t.Type != 0 {
 		typeStr = t.Type.String()
@@ -82,7 +82,7 @@ func (t *Transaction) toDTO() *TransactionDTO {
 	}
 }
 
-func (t *TransactionDTO) toModel() *Transaction {
+func (t *TransactionDTO) ToModel() *Transaction {
 	var id *int64
 	if t.ID != nil {
 		id = t.ID
@@ -126,6 +126,36 @@ func (t *TransactionDTO) toModel() *Transaction {
 		Description: *description,
 		Amount:      *amount,
 		Type:        tipo,
+	}
+}
+
+func (t *TransactionDTO) ToDTOUpdateTransaction(transaction *Transaction) {
+	if t.ID != nil {
+		transaction.ID = *t.ID
+	}
+
+	if t.Version != nil {
+		transaction.Version = *t.Version
+	}
+
+	if t.User != nil {
+		transaction.User = t.User.ToModel()
+	}
+
+	if t.Category != nil {
+		transaction.Category = t.Category.ToModel()
+	}
+
+	if t.Description != nil {
+		transaction.Description = *t.Description
+	}
+
+	if t.Type != nil {
+		transaction.Type = TypeCategoriaFromString(*t.Type)
+	}
+
+	if t.Amount != nil {
+		transaction.Amount = *t.Amount
 	}
 }
 
