@@ -23,6 +23,12 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPut, "/v1/categories:id", app.requireActivatedUser(app.updateCategoryHandler))
 	router.HandlerFunc(http.MethodDelete, "/v1/categories/:id", app.requireActivatedUser(app.deleteCategoryHandler))
 
+	router.HandlerFunc(http.MethodGet, "/v1/transactions", app.requireActivatedUser(app.listTransactionsHandler))
+	router.HandlerFunc(http.MethodPost, "/v1/transactions", app.requireActivatedUser(app.createTransactionHandler))
+	router.HandlerFunc(http.MethodGet, "/v1/transactions/:id", app.requireActivatedUser(app.showTransactionHandler))
+	router.HandlerFunc(http.MethodPut, "/v1/transactions/:id", app.requireActivatedUser(app.updateTransactionHandler))
+	router.HandlerFunc(http.MethodDelete, "/v1/transactions/:id", app.requireActivatedUser(app.deleteTransactionHandler))
+
 	router.HandlerFunc(http.MethodPost, "/v1/tokens/authentication", app.createAuthenticationTokenHandler)
 
 	router.Handler(http.MethodGet, "/debug/vars", expvar.Handler())
