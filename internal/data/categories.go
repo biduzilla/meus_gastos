@@ -53,7 +53,7 @@ type CategoryDTO struct {
 	ID        *int64     `json:"category_id"`
 	CreatedAt *time.Time `json:"-"`
 	Name      *string    `json:"name"`
-	Tipo      *string    `json:"tipo"`
+	Type      *string    `json:"type"`
 	Color     *string    `json:"color"`
 	User      *UserDTO   `json:"user"`
 	Version   *int       `json:"version"`
@@ -77,10 +77,9 @@ func (c *Category) ToDTO() *CategoryDTO {
 	if c.Name != "" {
 		name = &c.Name
 	}
-	var tipo *string
+	var typeStr string
 	if c.Type != 0 {
-		tipoStr := c.Type.String()
-		tipo = &tipoStr
+		typeStr = c.Type.String()
 	}
 	var color *string
 	if c.Color != "" {
@@ -99,7 +98,7 @@ func (c *Category) ToDTO() *CategoryDTO {
 		ID:        id,
 		CreatedAt: createdAt,
 		Name:      name,
-		Tipo:      tipo,
+		Type:      &typeStr,
 		Color:     color,
 		User:      user,
 		Version:   version,
@@ -123,8 +122,8 @@ func (c *CategoryDTO) ToModel() *Category {
 	}
 
 	var tipo TypeCategoria
-	if c.Tipo != nil {
-		tipo = TypeCategoriaFromString(*c.Tipo)
+	if c.Type != nil {
+		tipo = TypeCategoriaFromString(*c.Type)
 	}
 
 	var color string
@@ -162,8 +161,8 @@ func (c *CategoryDTO) ToDTOUpdateCategory(category *Category) *Category {
 		category.Name = *c.Name
 	}
 
-	if c.Tipo != nil {
-		category.Type = TypeCategoriaFromString(*c.Tipo)
+	if c.Type != nil {
+		category.Type = TypeCategoriaFromString(*c.Type)
 	}
 
 	if c.Color != nil {

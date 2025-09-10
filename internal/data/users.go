@@ -26,12 +26,10 @@ type User struct {
 }
 
 type UserDTO struct {
-	ID        int64  `json:"user_id"`
-	Name      string `json:"name"`
-	Email     string `json:"email"`
-	Phone     string `json:"phone"`
-	Activated bool   `json:"activated"`
-	Cod       int    `json:"cod"`
+	ID    int64  `json:"user_id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Phone string `json:"phone"`
 }
 
 type UserSaveDTO struct {
@@ -60,23 +58,19 @@ func (u *User) IsAnonymous() bool {
 
 func (u *User) ToDTO() *UserDTO {
 	return &UserDTO{
-		ID:        u.ID,
-		Name:      u.Name,
-		Email:     u.Email,
-		Phone:     u.Phone,
-		Activated: u.Activated,
-		Cod:       u.Cod,
+		ID:    u.ID,
+		Name:  u.Name,
+		Email: u.Email,
+		Phone: u.Phone,
 	}
 }
 
 func (u *UserDTO) ToModel() *User {
 	return &User{
-		ID:        u.ID,
-		Name:      u.Name,
-		Email:     u.Email,
-		Phone:     u.Phone,
-		Activated: u.Activated,
-		Cod:       u.Cod,
+		ID:    u.ID,
+		Name:  u.Name,
+		Email: u.Email,
+		Phone: u.Phone,
 	}
 }
 

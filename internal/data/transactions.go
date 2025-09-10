@@ -22,7 +22,6 @@ type Transaction struct {
 	Category    *Category
 	Description string
 	Amount      float64
-	Type        TypeCategoria
 }
 
 type TransactionDTO struct {
@@ -32,101 +31,64 @@ type TransactionDTO struct {
 	Category    *CategoryDTO `json:"category"`
 	Description *string      `json:"description"`
 	Amount      *float64     `json:"amount"`
-	Type        *string      `json:"type"`
+	CreatedAt   *time.Time   `json:"created_at"`
 }
 
 func (t *Transaction) ToDTO() *TransactionDTO {
-	var typeStr string
-	if t.Type != 0 {
-		typeStr = t.Type.String()
-	}
+	dto := &TransactionDTO{}
 
-	var id *int64
 	if t.ID != 0 {
-		id = &t.ID
+		dto.ID = &t.ID
 	}
 
-	var version *int
 	if t.Version != 0 {
-		version = &t.Version
+		dto.Version = &t.Version
 	}
 
-	var user *UserDTO
 	if t.User != nil {
-		user = t.User.ToDTO()
+		dto.User = t.User.ToDTO()
 	}
 
-	var category *CategoryDTO
 	if t.Category != nil {
-		category = t.Category.ToDTO()
+		dto.Category = t.Category.ToDTO()
 	}
 
-	var description *string
 	if t.Description != "" {
-		description = &t.Description
+		dto.Description = &t.Description
 	}
 
-	var amount *float64
 	if t.Amount != 0 {
-		amount = &t.Amount
+		dto.Amount = &t.Amount
 	}
 
-	return &TransactionDTO{
-		ID:          id,
-		Version:     version,
-		User:        user,
-		Category:    category,
-		Description: description,
-		Amount:      amount,
-		Type:        &typeStr,
-	}
+	dto.CreatedAt = &t.CreatedAt
+
+	return dto
 }
 
 func (t *TransactionDTO) ToModel() *Transaction {
-	var id *int64
+	transaction := &Transaction{}
+
 	if t.ID != nil {
-		id = t.ID
+		transaction.ID = *t.ID
 	}
-
-	var version *int
 	if t.Version != nil {
-		version = t.Version
+		transaction.Version = *t.Version
 	}
-
-	var user *User
 	if t.User != nil {
-		user = t.User.ToModel()
+		transaction.User = t.User.ToModel()
 	}
-
-	var category *Category
 	if t.Category != nil {
-		category = t.Category.ToModel()
+		transaction.Category = t.Category.ToModel()
 	}
-
-	var description *string
 	if t.Description != nil {
-		description = t.Description
+		transaction.Description = *t.Description
 	}
-
-	var tipo TypeCategoria
-	if t.Type != nil {
-		tipo = TypeCategoriaFromString(*t.Type)
-	}
-
-	var amount *float64
 	if t.Amount != nil {
-		amount = t.Amount
+		transaction.Amount = *t.Amount
 	}
 
-	return &Transaction{
-		ID:          *id,
-		Version:     *version,
-		User:        user,
-		Category:    category,
-		Description: *description,
-		Amount:      *amount,
-		Type:        tipo,
-	}
+	return transaction
 }
 
 func (t *TransactionDTO) ToDTOUpdateTransaction(transaction *Transaction) {
@@ -150,10 +112,6 @@ func (t *TransactionDTO) ToDTOUpdateTransaction(transaction *Transaction) {
 		transaction.Description = *t.Description
 	}
 
-	if t.Type != nil {
-		transaction.Type = TypeCategoriaFromString(*t.Type)
-	}
-
 	if t.Amount != nil {
 		transaction.Amount = *t.Amount
 	}
@@ -161,7 +119,7 @@ func (t *TransactionDTO) ToDTOUpdateTransaction(transaction *Transaction) {
 
 func (m TransactionModel) GetAllByUser(description string, userID int64, filters Filters) ([]*Transaction, Metadata, error) {
 	query := fmt.Sprintf(`
-	SELECT count(*) OVER(), id, created_at, deleted, version, user_id, category_id, description, amount, type
+	SELECT count(*) OVER(), id, created_at, deleted, version, user_id, category_id, description, amount
 	FROM transactions
 	WHERE (to_tsvector('simple', description) @@ plainto_tsquery('simple', $1) OR $1 = '')
 	AND user_id = $2 AND deleted = false
@@ -200,7 +158,6 @@ func (m TransactionModel) GetAllByUser(description string, userID int64, filters
 			&transaction.Category.ID,
 			&transaction.Description,
 			&transaction.Amount,
-			&transaction.Type,
 		)
 		if err != nil {
 			return nil, Metadata{}, err
@@ -214,12 +171,15 @@ func (m TransactionModel) GetAllByUser(description string, userID int64, filters
 
 func (m TransactionModel) GetByID(id int64, userID int64) (*Transaction, error) {
 	query := `
-	SELECT id, created_at, deleted, version, user_id, category_id, description, amount, type
+	SELECT id, created_at, deleted, version, user_id, category_id, description, amount
 	FROM transactions
 	WHERE id = $1 AND user_id = $2 AND deleted = false
 	`
 
 	var tx Transaction
+	tx.User = &User{}
+	tx.Category = &Category{}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -232,7 +192,6 @@ func (m TransactionModel) GetByID(id int64, userID int64) (*Transaction, error) 
 		&tx.Category.ID,
 		&tx.Description,
 		&tx.Amount,
-		&tx.Type,
 	)
 
 	if err != nil {
@@ -254,9 +213,8 @@ func (m TransactionModel) Insert(transaction *Transaction) error {
 			category_id, 
 			description, 
 			amount, 
-			type
 	)
-	VALUES ($1, $2, $3, $4, $5)
+	VALUES ($1, $2, $3, $4)
 	RETURNING id,created_at, version
 	`
 
@@ -265,7 +223,6 @@ func (m TransactionModel) Insert(transaction *Transaction) error {
 		transaction.Category.ID,
 		transaction.Description,
 		transaction.Amount,
-		transaction.Type,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -290,13 +247,12 @@ func (m TransactionModel) Update(transaction *Transaction, userID int64) error {
 		category_id = $2, 
 		description = $3, 
 		amount = $4, 
-		type = $5,
 		version = version + 1
 	WHERE 
-		id = $6 
-		AND user_id = $7 
+		id = $5
+		AND user_id = $6
 		AND deleted = false 
-		AND version = $8
+		AND version = $7
 	RETURNING version
 	`
 
@@ -305,7 +261,6 @@ func (m TransactionModel) Update(transaction *Transaction, userID int64) error {
 		transaction.Category.ID,
 		transaction.Description,
 		transaction.Amount,
-		transaction.Type,
 		transaction.ID,
 		userID,
 		transaction.Version,
@@ -367,6 +322,5 @@ func ValidateTransaction(v *validator.Validator, transaction *Transaction) {
 	v.Check(transaction.Description != "", "description", "must be provided")
 	v.Check(len(transaction.Description) <= 500, "description", "must not be more than 500 bytes long")
 	v.Check(transaction.Amount > 0, "amount", "must be positive")
-	v.Check(transaction.Type != 0, "type", "must be provided")
 	v.Check(transaction.Amount != 0, "amount", "must be provided")
 }

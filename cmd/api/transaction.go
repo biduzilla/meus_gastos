@@ -72,6 +72,11 @@ func (app *application) createTransactionHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
+	if transaction.Category == nil {
+		app.errorResponse(w, r, http.StatusUnprocessableEntity, "must category be provided")
+		return
+	}
+
 	err = app.models.Transactions.Insert(transaction)
 
 	if err != nil {
