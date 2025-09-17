@@ -117,7 +117,7 @@ func (t *TransactionDTO) ToDTOUpdateTransaction(transaction *Transaction) {
 	}
 }
 
-func (m TransactionModel) GetAllDespesasByUser(description string, userID int64, startDate, endDate time.Time, filters Filters) ([]*Transaction, Metadata, error) {
+func (m TransactionModel) GetAllByCategoryTypeAndUser(description string, userID int64, startDate, endDate time.Time, categoryType TypeCategoria, filters Filters) ([]*Transaction, Metadata, error) {
 	query := fmt.Sprintf(`
 		SELECT count(*) OVER(),
 		       t.id, t.created_at, t.deleted, t.version,
@@ -129,78 +129,17 @@ func (m TransactionModel) GetAllDespesasByUser(description string, userID int64,
 		    AND t.user_id = $2
 		    AND t.deleted = false
 		    AND c.deleted = false
-		    AND c.type = 2
 			AND ($3 IS NULL OR (t.created_at >= $3))
 	        AND ($4 IS NULL OR (t.created_at <= $4))
+			AND ($5 IS NULL OR c.type = $5)
 		ORDER BY %s %s, t.id ASC
-		LIMIT $5 OFFSET $6
+		LIMIT $6 OFFSET $7
 	`, filters.sortColumn(), filters.sortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	args := []any{description, userID, startDate, endDate, filters.limit(), filters.offset()}
-
-	rows, err := m.DB.QueryContext(ctx, query, args...)
-
-	if err != nil {
-		return nil, Metadata{}, err
-	}
-
-	defer rows.Close()
-
-	totalRecords := 0
-	transactions := []*Transaction{}
-
-	for rows.Next() {
-		transaction := Transaction{
-			User:     &User{},
-			Category: &Category{User: &User{}},
-		}
-		err := rows.Scan(
-			&totalRecords,
-			&transaction.ID,
-			&transaction.CreatedAt,
-			&transaction.Deleted,
-			&transaction.Version,
-			&transaction.User.ID,
-			&transaction.Category.ID,
-			&transaction.Description,
-			&transaction.Amount,
-		)
-		if err != nil {
-			return nil, Metadata{}, err
-		}
-		transactions = append(transactions, &transaction)
-	}
-
-	metaData := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
-	return transactions, metaData, nil
-}
-
-func (m TransactionModel) GetAllReceitasByUser(description string, userID int64, startDate, endDate time.Time, filters Filters) ([]*Transaction, Metadata, error) {
-	query := fmt.Sprintf(`
-		SELECT count(*) OVER(),
-		       t.id, t.created_at, t.deleted, t.version,
-		       t.user_id, t.category_id, t.description, t.amount
-		FROM transactions t
-		INNER JOIN categories c ON c.id = t.category_id
-		WHERE
-		    (to_tsvector('simple', t.description) @@ plainto_tsquery('simple', $1) OR $1 = '')
-		    AND t.user_id = $2
-		    AND t.deleted = false
-		    AND c.deleted = false
-		    AND c.type = 1
-			AND ($3 IS NULL OR (t.created_at >= $3))
-	        AND ($4 IS NULL OR (t.created_at <= $4))
-		ORDER BY %s %s, t.id ASC
-		LIMIT $5 OFFSET $6
-	`, filters.sortColumn(), filters.sortDirection())
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	args := []any{description, userID, startDate, endDate, filters.limit(), filters.offset()}
+	args := []any{description, userID, startDate, endDate, categoryType, filters.limit(), filters.offset()}
 
 	rows, err := m.DB.QueryContext(ctx, query, args...)
 

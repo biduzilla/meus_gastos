@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -40,6 +41,19 @@ func (app *application) readString(qs url.Values, key string, defaultValue strin
 	}
 
 	return s
+}
+
+func (app *application) readDate(qs url.Values, key string, layout string) *time.Time {
+	s := qs.Get(key)
+	if s == "" {
+		return nil
+	}
+
+	t, err := time.Parse(layout, s)
+	if err != nil {
+		return nil
+	}
+	return &t
 }
 
 func (app *application) readCSV(qs url.Values, key string, defaultValue []string) []string {
