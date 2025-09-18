@@ -158,7 +158,7 @@ func (app *application) readIntParam(r *http.Request, name string) (int64, error
 
 	id, err := strconv.ParseInt(params.ByName(name), 10, 64)
 	if err != nil || id < 1 {
-		return 0, errors.New(fmt.Sprintf("invalid %s parameter", name))
+		return 0, fmt.Errorf("invalid %s parameter", name)
 	}
 
 	return id, nil
