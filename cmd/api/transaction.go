@@ -19,8 +19,8 @@ func (app *application) listTransactionsByCategoryIDHandler(w http.ResponseWrite
 	var input struct {
 		Name       string
 		CategoryID int
-		StartDate  time.Time
-		EndDate    time.Time
+		StartDate  *time.Time
+		EndDate    *time.Time
 		data.Filters
 	}
 
@@ -28,8 +28,8 @@ func (app *application) listTransactionsByCategoryIDHandler(w http.ResponseWrite
 
 	qs := r.URL.Query()
 	input.Name = app.readString(qs, "description", "")
-	input.StartDate = *app.readDate(qs, "start", "2006-01-02")
-	input.EndDate = *app.readDate(qs, "end", "2006-01-02")
+	input.StartDate = app.readDate(qs, "start", "2006-01-02")
+	input.EndDate = app.readDate(qs, "end", "2006-01-02")
 	input.Filters.Page = app.readInt(qs, "page", 1, v)
 	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
 	input.Filters.Sort = app.readString(qs, "sort", "id")
@@ -69,8 +69,8 @@ func (app *application) listTransactionsHandler(w http.ResponseWriter, r *http.R
 		Name string
 		data.Filters
 		CategoryType data.TypeCategoria
-		StartDate    time.Time
-		EndDate      time.Time
+		StartDate    *time.Time
+		EndDate      *time.Time
 	}
 
 	v := validator.New()
@@ -80,8 +80,8 @@ func (app *application) listTransactionsHandler(w http.ResponseWriter, r *http.R
 	if categoryStr != "" {
 		input.CategoryType = data.TypeCategoriaFromString(categoryStr)
 	}
-	input.StartDate = *app.readDate(qs, "start", "2006-01-02")
-	input.EndDate = *app.readDate(qs, "end", "2006-01-02")
+	input.StartDate = app.readDate(qs, "start", "2006-01-02")
+	input.EndDate = app.readDate(qs, "end", "2006-01-02")
 	input.Name = app.readString(qs, "description", "")
 	input.Filters.Page = app.readInt(qs, "page", 1, v)
 	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)

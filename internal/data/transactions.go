@@ -117,14 +117,22 @@ func (t *TransactionDTO) ToDTOUpdateTransaction(transaction *Transaction) {
 	}
 }
 
-func (m TransactionModel) GetAllByUserAndCategory(description string, userID int64, categoryID int64, startDate, endDate time.Time, filters Filters) ([]*Transaction, Metadata, error) {
+func (m TransactionModel) GetAllByUserAndCategory(description string, userID int64, categoryID int64, startDate, endDate *time.Time, filters Filters) ([]*Transaction, Metadata, error) {
 	query := fmt.Sprintf(`
-	SELECT count(*) OVER(), id, created_at, deleted, version, user_id, category_id, description, amount
-	FROM transactions
-	WHERE (to_tsvector('simple', description) @@ plainto_tsquery('simple', $1) OR $1 = '')
-	AND user_id = $2 AND deleted = false AND category_id = $3
-	AND ($4 IS NULL OR (t.created_at >= $4))
-	AND ($5 IS NULL OR (t.created_at <= $5))
+	SELECT count(*) OVER(), 
+	t.id, 
+	t.created_at, 
+	t.deleted, 
+	t.version, 
+	t.user_id, 
+	t.category_id, 
+	t.description, 
+	t.amount
+	FROM transactions t
+	WHERE (to_tsvector('simple', t.description) @@ plainto_tsquery('simple', $1) OR $1 = '')
+	AND t.user_id = $2 AND t.deleted = false AND t.category_id = $3
+	AND ($4::timestamptz IS NULL OR t.created_at >= $4::timestamptz)
+	AND ($5::timestamptz IS NULL OR t.created_at <= $5::timestamptz)
 	ORDER BY %s %s, id ASC
 	LIMIT $6 OFFSET $7
 	`, filters.sortColumn(), filters.sortDirection())
@@ -132,7 +140,26 @@ func (m TransactionModel) GetAllByUserAndCategory(description string, userID int
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	args := []any{description, userID, categoryID, startDate, endDate, filters.limit(), filters.offset()}
+	start := sql.NullTime{}
+	if startDate != nil {
+		start.Valid = true
+		start.Time = *startDate
+	}
+
+	end := sql.NullTime{}
+	if endDate != nil {
+		end.Valid = true
+		end.Time = *endDate
+	}
+	args := []any{
+		description,
+		userID,
+		categoryID,
+		start,
+		end,
+		filters.limit(),
+		filters.offset(),
+	}
 	rows, err := m.DB.QueryContext(ctx, query, args...)
 
 	if err != nil {
@@ -170,7 +197,7 @@ func (m TransactionModel) GetAllByUserAndCategory(description string, userID int
 	return transactions, metaData, nil
 }
 
-func (m TransactionModel) GetAllByUser(description string, userID int64, startDate, endDate time.Time, categoryType TypeCategoria, filters Filters) ([]*Transaction, Metadata, error) {
+func (m TransactionModel) GetAllByUser(description string, userID int64, startDate, endDate *time.Time, categoryType TypeCategoria, filters Filters) ([]*Transaction, Metadata, error) {
 	query := fmt.Sprintf(`
 	SELECT count(*) OVER(), 
 		t.id, 
@@ -186,8 +213,8 @@ func (m TransactionModel) GetAllByUser(description string, userID int64, startDa
 	WHERE (to_tsvector('simple', t.description) @@ plainto_tsquery('simple', $1) OR $1 = '')
 	AND t.user_id = $2 
 	AND t.deleted = false
-	AND ($3 IS NULL OR (t.created_at >= $3))
-	AND ($4 IS NULL OR (t.created_at <= $4))
+	AND ($3::timestamptz IS NULL OR t.created_at >= $3::timestamptz)
+	AND ($4::timestamptz IS NULL OR t.created_at <= $4::timestamptz)
 	AND ($5 IS NULL OR c.type = $5)
 	ORDER BY %s %s, t.id ASC
 	LIMIT $6 OFFSET $7
@@ -196,11 +223,23 @@ func (m TransactionModel) GetAllByUser(description string, userID int64, startDa
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
+	start := sql.NullTime{}
+	if startDate != nil {
+		start.Valid = true
+		start.Time = *startDate
+	}
+
+	end := sql.NullTime{}
+	if endDate != nil {
+		end.Valid = true
+		end.Time = *endDate
+	}
+
 	args := []any{
 		description,
 		userID,
-		startDate,
-		endDate,
+		start,
+		end,
 		categoryType,
 		filters.limit(),
 		filters.offset(),
